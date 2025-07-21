@@ -120,11 +120,3 @@ panel serve app.py --show
 
 Isso abrirá a aplicação no seu navegador padrão.
 📊 Esquema Relacional do Banco de Dados
-
-Este é o esquema relacional do banco de dados que sustenta a aplicação.
-🤝 Contribuição
-
-Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou pull requests.
-📄 Licença
-
-Este projeto está licenciado sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
