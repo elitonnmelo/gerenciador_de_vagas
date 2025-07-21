@@ -96,7 +96,6 @@ Este repositório contém o código-fonte de uma aplicação web interativa dese
 
     pip install -r requirements.txt
 
-    (Você precisará criar um arquivo requirements.txt com as dependências: panel, pandas, sqlalchemy, psycopg2-binary se estiver usando PostgreSQL).
 
     Configure o Banco de Dados:
 
