@@ -1,0 +1,4 @@
+panel
+pandas
+sqlalchemy
+psycopg2-binary
