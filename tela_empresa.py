@@ -2,7 +2,8 @@ import panel as pn
 import pandas as pd
 from database import SessionLocal
 from sqlalchemy.exc import IntegrityError
-from models import Empresa, Vaga, Publica, ResponsavelInclusao, Candidatura, Candidato, Denuncia
+# Importar os modelos necessários para a tela da empresa
+from models import Empresa, Vaga, Publica, ResponsavelInclusao, Candidatura, Candidato, Denuncia, GrupoVulneravel, VagaGrupo
 
 pn.extension()
 
@@ -22,8 +23,10 @@ def tela_empresa():
     feedbacks_df = pn.pane.DataFrame(name="Feedbacks de Candidaturas", width=800, height=200)
     den_emp_df = pn.pane.DataFrame(name="Denúncias Recebidas", width=800, height=200)
     cands_vaga_df = pn.pane.DataFrame(name="Candidatos para a Vaga", width=800, height=200)
+    vaga_grupo_df = pn.pane.DataFrame(name="Grupos Associados à Vaga", width=800, height=150)
 
     _curr_cnpj = None
+    _curr_vaga_id = None
 
     vaga_id_in = pn.widgets.TextInput(name="ID da Vaga (para Buscar/Atualizar/Deletar)", placeholder="Gerado automaticamente ao criar")
     vaga_titulo_in = pn.widgets.TextInput(name="Título da Vaga")
@@ -62,6 +65,12 @@ def tela_empresa():
     btn_upd_cand_status = pn.widgets.Button(name="Atualizar Status Candidatura", button_type="warning", disabled=True)
     msg_cand_status = pn.pane.Markdown()
 
+    grupos_vaga_sel = pn.widgets.Select(name="Grupo Vulnerável", options={})
+    perc_vaga_in = pn.widgets.FloatInput(name="Percentual da Vaga (%)", start=0.0, end=100.0, step=0.1, value=0.0)
+    btn_add_vaga_grupo = pn.widgets.Button(name="Adicionar Grupo à Vaga", button_type="success", disabled=True)
+    btn_rem_vaga_grupo = pn.widgets.Button(name="Remover Grupo da Vaga", button_type="danger", disabled=True)
+    msg_vaga_grupo = pn.pane.Markdown()
+
 
     def hab_campos_emp(habilitar=True):
         nome_in.disabled = not habilitar
@@ -76,6 +85,10 @@ def tela_empresa():
         btn_buscar_vaga.disabled = not habilitar
         btn_upd_vaga.disabled = not habilitar
         btn_del_vaga.disabled = not habilitar
+        grupos_vaga_sel.disabled = not habilitar
+        perc_vaga_in.disabled = not habilitar
+        btn_add_vaga_grupo.disabled = not habilitar
+        btn_rem_vaga_grupo.disabled = not habilitar
 
     def hab_btns_resp(habilitar=True):
         btn_criar_resp.disabled = not habilitar
@@ -102,6 +115,9 @@ def tela_empresa():
         vaga_ben_in.value = ""
         vaga_status_sel.value = "aberta"
         msg_vaga.object = ""
+        vaga_grupo_df.object = pd.DataFrame()
+        perc_vaga_in.value = 0.0
+        msg_vaga_grupo.object = ""
 
     def limpar_campos_resp():
         resp_email_in.value = ""
@@ -118,10 +134,41 @@ def tela_empresa():
 
     def limpar_campos_cand_status():
         vaga_cands_sel.value = None
+        cands_vaga_df.object = pd.DataFrame()
         cand_cpf_cand_in.value = ""
         cand_status_upd_sel.value = "Pendente"
         cand_feedback_in.value = ""
         msg_cand_status.object = ""
+
+    def carregar_grupos_vulneraveis_para_vaga():
+        db = SessionLocal()
+        try:
+            grupos = db.query(GrupoVulneravel).all()
+            grupos_options = {f"{g.nome} (ID: {g.id_grupo})": g.id_grupo for g in grupos}
+            grupos_vaga_sel.options = grupos_options
+            if grupos_options:
+                grupos_vaga_sel.value = list(grupos_options.values())[0]
+            else:
+                grupos_vaga_sel.value = None
+        except Exception as e:
+            print(f"Erro ao carregar grupos vulneráveis para vaga: {e}")
+            grupos_vaga_sel.options = {"Nenhum grupo disponível": None}
+            grupos_vaga_sel.value = None
+        finally:
+            db.close()
+
+    def _carregar_vaga_grupo_data(db, vaga_id):
+        vaga_grupo_data = []
+        assocs = db.query(VagaGrupo).filter(VagaGrupo.id_vaga == vaga_id).all()
+        for assoc in assocs:
+            grupo = db.query(GrupoVulneravel).filter(GrupoVulneravel.id_grupo == assoc.id_grupo).first()
+            nome_grupo = grupo.nome if grupo else "Grupo Desconhecido"
+            vaga_grupo_data.append({
+                'ID Grupo': assoc.id_grupo,
+                'Nome do Grupo': nome_grupo,
+                'Percentual Vaga': assoc.percentual_vaga
+            })
+        return vaga_grupo_data
 
 
     def criar_vaga_func(event=None):
@@ -150,7 +197,7 @@ def tela_empresa():
             db.commit()
             msg_vaga.object = f"Vaga '{nova_vaga.titulo}' (ID: {nova_vaga.id_vaga}) criada e publicada com sucesso!"
             limpar_campos_vaga()
-            buscar_emp(update_only_extras=True)
+            buscar_emp_func(update_only_extras=True) # Corrigido aqui
         except Exception as e:
             db.rollback()
             msg_vaga.object = f"Erro ao criar vaga: {e}"
@@ -158,7 +205,7 @@ def tela_empresa():
             db.close()
 
     def buscar_vaga_func(event=None):
-        nonlocal _curr_cnpj
+        nonlocal _curr_cnpj, _curr_vaga_id
         if not _curr_cnpj:
             msg_vaga.object = "Por favor, busque uma empresa primeiro."
             return
@@ -175,13 +222,19 @@ def tela_empresa():
             ).first()
 
             if vaga:
+                _curr_vaga_id = vaga.id_vaga
                 vaga_titulo_in.value = vaga.titulo
                 vaga_desc_in.value = vaga.descricao
                 vaga_sal_in.value = float(vaga.salario)
                 vaga_ben_in.value = vaga.beneficios
                 vaga_status_sel.value = vaga.status_vaga
                 msg_vaga.object = "Vaga encontrada."
+                
+                vaga_grupo_df.object = pd.DataFrame(_carregar_vaga_grupo_data(db, _curr_vaga_id))
+                carregar_grupos_vulneraveis_para_vaga() # Chamado aqui para popular o select
+
             else:
+                _curr_vaga_id = None
                 msg_vaga.object = "Vaga não encontrada para esta empresa."
                 limpar_campos_vaga()
         except ValueError:
@@ -216,7 +269,7 @@ def tela_empresa():
                 vaga.status_vaga = vaga_status_sel.value
                 db.commit()
                 msg_vaga.object = "Vaga atualizada com sucesso!"
-                buscar_emp(update_only_extras=True)
+                buscar_emp_func(update_only_extras=True) # Corrigido aqui
             else:
                 msg_vaga.object = "Vaga não encontrada para esta empresa."
         except ValueError:
@@ -228,7 +281,7 @@ def tela_empresa():
             db.close()
 
     def del_vaga_func(event=None):
-        nonlocal _curr_cnpj
+        nonlocal _curr_cnpj, _curr_vaga_id
         if not _curr_cnpj:
             msg_vaga.object = "Por favor, busque uma empresa primeiro."
             return
@@ -239,6 +292,7 @@ def tela_empresa():
         db = SessionLocal()
         try:
             vaga_id = int(vaga_id_in.value)
+            db.query(VagaGrupo).filter(VagaGrupo.id_vaga == vaga_id).delete(synchronize_session=False)
             pub = db.query(Publica).filter(
                 Publica.id_vaga == vaga_id,
                 Publica.cnpj_empresa == _curr_cnpj
@@ -254,7 +308,8 @@ def tela_empresa():
                     db.commit()
                     msg_vaga.object = "Vaga deletada com sucesso!"
                     limpar_campos_vaga()
-                    buscar_emp(update_only_extras=True)
+                    _curr_vaga_id = None
+                    buscar_emp_func(update_only_extras=True) # Corrigido aqui
                 else:
                     msg_vaga.object = "Vaga não encontrada para exclusão após remover publicação."
             else:
@@ -262,7 +317,7 @@ def tela_empresa():
 
         except IntegrityError:
             db.rollback()
-            msg_vaga.object = "Não é possível deletar a vaga: ela está relacionada a candidaturas ou grupos."
+            msg_vaga.object = "Não é possível deletar a vaga: ela está relacionada a candidaturas ou outras tabelas."
         except ValueError:
             msg_vaga.object = "ID da Vaga inválido. Digite um número."
         except Exception as e:
@@ -294,7 +349,7 @@ def tela_empresa():
             db.commit()
             msg_resp.object = "Responsável por Inclusão adicionado com sucesso!"
             limpar_campos_resp()
-            buscar_emp(update_only_extras=True)
+            buscar_emp_func(update_only_extras=True) # Corrigido aqui
         except IntegrityError:
             db.rollback()
             msg_resp.object = "Erro: Email já existe para esta empresa ou violação de integridade."
@@ -355,7 +410,7 @@ def tela_empresa():
                 resp.cargo = resp_cargo_in.value
                 db.commit()
                 msg_resp.object = "Responsável atualizado com sucesso!"
-                buscar_emp(update_only_extras=True)
+                buscar_emp_func(update_only_extras=True) # Corrigido aqui
             else:
                 msg_resp.object = "Responsável não encontrado para esta empresa."
         except Exception as e:
@@ -385,7 +440,7 @@ def tela_empresa():
                 db.commit()
                 msg_resp.object = "Responsável removido com sucesso!"
                 limpar_campos_resp()
-                buscar_emp(update_only_extras=True)
+                buscar_emp_func(update_only_extras=True) # Corrigido aqui
             else:
                 msg_resp.object = "Responsável não encontrado para esta empresa."
         except Exception as e:
@@ -395,7 +450,7 @@ def tela_empresa():
             db.close()
 
 
-    def upd_status_den(event=None):
+    def upd_status_den_func(event=None):
         nonlocal _curr_cnpj
         if not _curr_cnpj:
             msg_den_emp.object = "Por favor, busque uma empresa primeiro."
@@ -417,7 +472,7 @@ def tela_empresa():
                 den.acoes_tomadas = den_acoes_in.value
                 db.commit()
                 msg_den_emp.object = "Status da denúncia atualizado com sucesso!"
-                buscar_emp(update_only_extras=True)
+                buscar_emp_func(update_only_extras=True) # Corrigido aqui
             else:
                 msg_den_emp.object = "Denúncia não encontrada ou não relacionada a esta empresa."
         except ValueError:
@@ -428,7 +483,7 @@ def tela_empresa():
         finally:
             db.close()
 
-    def carregar_cands_por_vaga(event=None):
+    def carregar_cands_por_vaga_func(event=None):
         nonlocal _curr_cnpj
         if not _curr_cnpj:
             cands_vaga_df.object = pd.DataFrame()
@@ -457,8 +512,8 @@ def tela_empresa():
 
             cands_data = []
             for cand in cands:
-                candidato_obj = db.query(Candidato).filter(Candidato.cpf == cand.cpf_candidato).first()
-                nome_cand = candidato_obj.nome if candidato_obj else "Candidato Desconhecido"
+                cand_obj = db.query(Candidato).filter(Candidato.cpf == cand.cpf_candidato).first()
+                nome_cand = cand_obj.nome if cand_obj else "Candidato Desconhecido"
                 cands_data.append({
                     'CPF Candidato': cand.cpf_candidato,
                     'Nome Candidato': nome_cand,
@@ -475,7 +530,7 @@ def tela_empresa():
             db.close()
 
 
-    def upd_status_cand(event=None):
+    def upd_status_cand_func(event=None):
         nonlocal _curr_cnpj
         if not _curr_cnpj:
             msg_cand_status.object = "Por favor, busque uma empresa primeiro."
@@ -509,8 +564,8 @@ def tela_empresa():
                 cand.feedback_empresa = cand_feedback_in.value
                 db.commit()
                 msg_cand_status.object = "Status da candidatura atualizado com sucesso!"
-                carregar_cands_por_vaga()
-                buscar_emp(update_only_extras=True)
+                carregar_cands_por_vaga_func()
+                buscar_emp_func(update_only_extras=True) # Corrigido aqui
             else:
                 msg_cand_status.object = "Candidatura não encontrada para esta vaga e CPF."
         except Exception as e:
@@ -519,8 +574,76 @@ def tela_empresa():
         finally:
             db.close()
 
+    def add_vaga_grupo_func(event=None):
+        nonlocal _curr_vaga_id
+        if not _curr_vaga_id:
+            msg_vaga_grupo.object = "Por favor, selecione uma vaga primeiro."
+            return
+        if not grupos_vaga_sel.value:
+            msg_vaga_grupo.object = "Por favor, selecione um grupo."
+            return
+        
+        db = SessionLocal()
+        try:
+            id_grupo_sel = grupos_vaga_sel.value
+            perc_vaga = perc_vaga_in.value
 
-    def criar_emp(event=None):
+            assoc_existente = db.query(VagaGrupo).filter(
+                VagaGrupo.id_vaga == _curr_vaga_id,
+                VagaGrupo.id_grupo == id_grupo_sel
+            ).first()
+
+            if assoc_existente:
+                msg_vaga_grupo.object = "Esta vaga já está associada a este grupo."
+            else:
+                nova_assoc = VagaGrupo(
+                    id_vaga=_curr_vaga_id,
+                    id_grupo=id_grupo_sel,
+                    percentual_vaga=perc_vaga
+                )
+                db.add(nova_assoc)
+                db.commit()
+                msg_vaga_grupo.object = "Associação Vaga-Grupo adicionada com sucesso!"
+                perc_vaga_in.value = 0.0
+                buscar_vaga_func() # Atualiza a tabela de grupos da vaga
+        except Exception as e:
+            db.rollback()
+            msg_vaga_grupo.object = f"Erro ao adicionar associação Vaga-Grupo: {e}"
+        finally:
+            db.close()
+
+    def rem_vaga_grupo_func(event=None):
+        nonlocal _curr_vaga_id
+        if not _curr_vaga_id:
+            msg_vaga_grupo.object = "Por favor, selecione uma vaga primeiro."
+            return
+        if not grupos_vaga_sel.value:
+            msg_vaga_grupo.object = "Por favor, selecione um grupo para remover."
+            return
+        
+        db = SessionLocal()
+        try:
+            id_grupo_sel = grupos_vaga_sel.value
+            assoc = db.query(VagaGrupo).filter(
+                VagaGrupo.id_vaga == _curr_vaga_id,
+                VagaGrupo.id_grupo == id_grupo_sel
+            ).first()
+
+            if assoc:
+                db.delete(assoc)
+                db.commit()
+                msg_vaga_grupo.object = "Associação Vaga-Grupo removida com sucesso!"
+                buscar_vaga_func() # Atualiza a tabela de grupos da vaga
+            else:
+                msg_vaga_grupo.object = "Associação Vaga-Grupo não encontrada."
+        except Exception as e:
+            db.rollback()
+            msg_vaga_grupo.object = f"Erro ao remover associação Vaga-Grupo: {e}"
+        finally:
+            db.close()
+
+
+    def criar_emp_func(event=None):
         db = SessionLocal()
         try:
             nova_emp = Empresa(
@@ -545,7 +668,7 @@ def tela_empresa():
         finally:
             db.close()
 
-    def buscar_emp(event=None, update_only_extras=False):
+    def buscar_emp_func(event=None, update_only_extras=False):
         nonlocal _curr_cnpj
         db = SessionLocal()
         try:
@@ -636,7 +759,10 @@ def tela_empresa():
 
                 hab_btns_cand_status(True)
                 if vaga_cands_sel.value:
-                    carregar_cands_por_vaga()
+                    carregar_cands_por_vaga_func()
+                
+                # Carrega grupos vulneráveis para o select de Vaga_Grupo
+                carregar_grupos_vulneraveis_para_vaga()
 
             else:
                 _curr_cnpj = None
@@ -659,7 +785,7 @@ def tela_empresa():
         finally:
             db.close()
 
-    def upd_emp(event=None):
+    def upd_emp_func(event=None):
         db = SessionLocal()
         try:
             e = db.query(Empresa).filter(Empresa.cnpj == cnpj_in.value).first()
@@ -680,7 +806,7 @@ def tela_empresa():
         finally:
             db.close()
 
-    def del_emp(event=None):
+    def del_emp_func(event=None):
         nonlocal _curr_cnpj
         db = SessionLocal()
         try:
@@ -725,6 +851,7 @@ def tela_empresa():
         feedbacks_df.object = pd.DataFrame()
         den_emp_df.object = pd.DataFrame()
         cands_vaga_df.object = pd.DataFrame()
+        vaga_grupo_df.object = pd.DataFrame()
 
 
         limpar_campos_vaga()
@@ -739,18 +866,22 @@ def tela_empresa():
         limpar_campos_cand_status()
         hab_btns_cand_status(False)
 
+        # Limpa e reseta o select de grupos vulneráveis para vaga
+        grupos_vaga_sel.options = {}
+        grupos_vaga_sel.value = None
+
 
     btn_criar_emp = pn.widgets.Button(name="Criar", button_type="success")
-    btn_criar_emp.on_click(criar_emp)
+    btn_criar_emp.on_click(criar_emp_func)
 
     btn_buscar_emp = pn.widgets.Button(name="Buscar", button_type="primary")
-    btn_buscar_emp.on_click(buscar_emp)
+    btn_buscar_emp.on_click(buscar_emp_func)
 
     btn_upd_emp = pn.widgets.Button(name="Atualizar", button_type="warning")
-    btn_upd_emp.on_click(upd_emp)
+    btn_upd_emp.on_click(upd_emp_func)
 
     btn_del_emp = pn.widgets.Button(name="Deletar", button_type="danger")
-    btn_del_emp.on_click(del_emp)
+    btn_del_emp.on_click(del_emp_func)
 
     btn_limpar_emp_campos = pn.widgets.Button(name="Limpar Campos", button_type="default")
     btn_limpar_emp_campos.on_click(lambda event: limpar_campos_emp())
@@ -765,10 +896,13 @@ def tela_empresa():
     btn_upd_resp.on_click(upd_resp_func)
     btn_del_resp.on_click(del_resp_func)
 
-    btn_upd_den_status.on_click(upd_status_den)
+    btn_upd_den_status.on_click(upd_status_den_func)
 
-    vaga_cands_sel.param.watch(carregar_cands_por_vaga, 'value')
-    btn_upd_cand_status.on_click(upd_status_cand)
+    vaga_cands_sel.param.watch(carregar_cands_por_vaga_func, 'value')
+    btn_upd_cand_status.on_click(upd_status_cand_func)
+
+    btn_add_vaga_grupo.on_click(add_vaga_grupo_func)
+    btn_rem_vaga_grupo.on_click(rem_vaga_grupo_func)
 
 
     btns_crud_emp = pn.Row(btn_criar_emp, btn_buscar_emp, btn_upd_emp, btn_del_emp, btn_limpar_emp_campos)
@@ -785,7 +919,14 @@ def tela_empresa():
             vaga_ben_in,
             vaga_status_sel,
             pn.Row(btn_criar_vaga, btn_buscar_vaga, btn_upd_vaga, btn_del_vaga),
-            msg_vaga
+            msg_vaga,
+            pn.layout.Divider(),
+            "### Gerenciar Grupos por Vaga",
+            grupos_vaga_sel,
+            perc_vaga_in,
+            pn.Row(btn_add_vaga_grupo, btn_rem_vaga_grupo),
+            msg_vaga_grupo,
+            vaga_grupo_df
         )),
         ("Responsáveis por Inclusão", pn.Column(
             resps_df,
