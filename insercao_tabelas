@@ -1,0 +1,61 @@
+-- Grupos vulneráveis
+INSERT INTO Grupo_Vulneravel (Nome, Descricao) VALUES
+('Pessoas com deficiência', 'Pessoas com limitação física ou intelectual'),
+('Refugiados', 'Indivíduos deslocados por crises humanitárias'),
+('Negros e pardos', 'Grupos étnico-raciais historicamente marginalizados'),
+('LGBTQIA+', 'Pessoas com diversidade de orientação ou identidade'),
+('Egressos do sistema prisional', 'Pessoas que cumpriram pena e estão em liberdade');
+
+-- Empresas
+INSERT INTO Empresa (CNPJ, Nome, Razao_Social, Site, Endereco, Telefone, Email) VALUES
+('00111222000100', 'IncluirTech', 'IncluirTech LTDA', 'www.incluirtech.com.br', 'Rua A, 123', '85999999999', 'contato@incluirtech.com.br'),
+('00222333000111', 'DiversiJobs', 'DiversiJobs S.A.', 'www.diversijobs.com', 'Av B, 456', '85988888888', 'rh@diversijobs.com');
+
+-- Vagas
+INSERT INTO Vaga (Titulo, Descricao, Salario, Beneficios, Status_Vaga) VALUES
+('Dev Júnior', 'Desenvolvedor iniciante para frontend', 2500.00, 'VR, VT', 'aberta'),
+('Analista RH', 'Inclusão e diversidade', 3000.00, 'VR, Plano de Saúde', 'aberta');
+
+-- Publica
+INSERT INTO Publica (Id_Vaga, CNPJ_Empresa) VALUES
+(1, '00111222000100'),
+(2, '00222333000111');
+
+-- Vaga_Grupo
+INSERT INTO Vaga_Grupo (Id_Vaga, Id_Grupo, Percentual_Vaga) VALUES
+(1, 1, 50.00),
+(1, 2, 50.00),
+(2, 3, 100.00);
+
+-- Candidatos
+INSERT INTO Candidato (CPF, Nome, Email, Pretensao_Salarial, Endereco, Telefone, Data_Nascimento, Curriculo) VALUES
+('12345678900', 'João Silva', 'joao@email.com', 2000.00, 'Rua C, 111', '85977777777', '1995-04-23', 'Experiência em suporte'),
+('98765432100', 'Maria Oliveira', 'maria@email.com', 3000.00, 'Rua D, 222', '85966666666', '1993-09-15', 'Analista de RH sênior');
+
+-- Candidato_Grupo
+INSERT INTO Candidato_Grupo (CPF_Candidato, Id_Grupo, Comprovante, Data_Inclusao, Status_Validacao) VALUES
+('12345678900', 1, 'arquivo1.pdf', '2025-01-20', 'validado'),
+('98765432100', 3, 'arquivo2.pdf', '2025-01-22', 'em análise');
+
+-- Candidatura
+INSERT INTO Candidatura (CPF_Candidato, Id_Vaga, Data_Candidatura, Status, Feedback_Empresa) VALUES
+('12345678900', 1, '2025-03-01', 'em análise', NULL),
+('98765432100', 2, '2025-03-02', 'rejeitado', 'Experiência insuficiente');
+
+-- Denuncia
+INSERT INTO Denuncia (CPF_Candidato, Id_Vaga, Data_Denuncia, Descricao, Status_Denuncia, Acoes_Tomadas) VALUES
+('12345678900', 1, '2025-03-05', 'Comentário preconceituoso na entrevista', 'aberta', NULL);
+
+-- Curso
+INSERT INTO Curso (Titulo, Descricao, Carga_Horaria, Modalidade, Instituicao, Link) VALUES
+('Introdução à Programação', 'Lógica e Python', 40, 'Online', 'Alura', 'https://alura.com.br/curso1'),
+('Diversidade nas Empresas', 'Curso de inclusão e RH', 20, 'Presencial', 'SEBRAE', 'https://sebrae.com.br/curso2');
+
+-- Inscrição Curso
+INSERT INTO Inscricao_Curso (CPF_Candidato, Id_Curso, Data_Inscricao, Comentario_Avaliacao, Status) VALUES
+('12345678900', 1, '2025-04-01', 'Muito bom curso', 'concluído'),
+('98765432100', 2, '2025-04-03', 'Material excelente', 'em andamento');
+
+-- Responsável Inclusão
+INSERT INTO Responsavel_Inclusao (Email, CNPJ_Empresa, Nome, Departamento, Cargo) VALUES
+('inclusao@incluirtech.com.br', '00111222000100', 'Carla Lima', 'Recursos Humanos', 'Coordenadora de Inclusão');
