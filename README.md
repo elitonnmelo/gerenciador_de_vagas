@@ -1,7 +1,7 @@
 Plataforma de Inclusão e Diversidade para Vagas de Emprego
 
 Este repositório contém o código-fonte de uma aplicação web interativa desenvolvida em Python, projetada para promover a inclusão e diversidade no mercado de trabalho. A plataforma permite o gerenciamento de candidatos, empresas, cursos e grupos vulneráveis, facilitando a conexão entre talentos diversos e oportunidades de emprego.
-🚀 Funcionalidades Principais
+Funcionalidades Principais
 
     Gerenciamento de Candidatos:
 
@@ -47,7 +47,7 @@ Este repositório contém o código-fonte de uma aplicação web interativa dese
 
         Gerenciamento de associações entre candidatos e grupos (atualização de status de validação e comprovantes).
 
-🛠️ Tecnologias Utilizadas
+Tecnologias Utilizadas
 
     Backend/Frontend (Python Framework): Panel
 
@@ -57,7 +57,7 @@ Este repositório contém o código-fonte de uma aplicação web interativa dese
 
     Manipulação de Dados: Pandas
 
-📂 Estrutura do Projeto
+Estrutura do Projeto
 
     app.py: Ponto de entrada principal da aplicação Panel, organiza as telas em abas.
 
@@ -77,7 +77,7 @@ Este repositório contém o código-fonte de uma aplicação web interativa dese
 
     insercao_tabelas: Script SQL para inserção de dados de exemplo nas tabelas.
 
-⚙️ Configuração e Instalação
+Configuração e Instalação
 
     Clone o repositório:
 
@@ -108,12 +108,11 @@ Este repositório contém o código-fonte de uma aplicação web interativa dese
         Crie as tabelas: Execute o script criacao_tabelas no seu banco de dados.
 
         Insira dados de exemplo: Execute o script insercao_tabelas para popular o banco com dados de teste.
-        
-▶️ Como Executar
+
+Como Executar
 
 Após a configuração do banco de dados e a instalação das dependências, execute a aplicação Panel:
 
 panel serve app.py --show
 
 Isso abrirá a aplicação no seu navegador padrão.
-📊 Esquema Relacional do Banco de Dados
