@@ -51,7 +51,7 @@ Este repositório contém o código-fonte de uma aplicação web interativa dese
 
     Backend/Frontend (Python Framework): Panel
 
-    Banco de Dados: PostgreSQL (ou outro compatível com SQLAlchemy)
+    Banco de Dados: PostgreSQL
 
     ORM (Object-Relational Mapper): SQLAlchemy
 
@@ -81,8 +81,8 @@ Este repositório contém o código-fonte de uma aplicação web interativa dese
 
     Clone o repositório:
 
-    git clone <URL_DO_SEU_REPOSITORIO>
-    cd <nome_do_seu_repositorio>
+    git https://github.com/elitonnmelo/gerenciador_de_vagas.git
+    cd gerenciador_de_vagas
 
     Crie e ative um ambiente virtual (recomendado):
 
@@ -99,7 +99,7 @@ Este repositório contém o código-fonte de uma aplicação web interativa dese
 
     Configure o Banco de Dados:
 
-        Certifique-se de ter um servidor PostgreSQL (ou outro banco de dados) em execução.
+        Certifique-se de ter um servidor PostgreSQL em execução.
 
         Atualize a DATABASE_URL em database.py com suas credenciais e detalhes do banco de dados. Exemplo:
 
@@ -107,10 +107,8 @@ Este repositório contém o código-fonte de uma aplicação web interativa dese
 
         Crie as tabelas: Execute o script criacao_tabelas no seu banco de dados.
 
-        Insira dados de exemplo (opcional): Execute o script insercao_tabelas para popular o banco com dados de teste.
-
-        Importante: Se você fez alterações no models.py após a criação inicial das tabelas, pode ser necessário recriar as tabelas ou usar uma ferramenta de migração (como Alembic) para aplicar as mudanças.
-
+        Insira dados de exemplo: Execute o script insercao_tabelas para popular o banco com dados de teste.
+        
 ▶️ Como Executar
 
 Após a configuração do banco de dados e a instalação das dependências, execute a aplicação Panel:
