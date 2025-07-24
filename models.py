@@ -1,6 +1,5 @@
-# models.py
 from sqlalchemy import Column, String, Integer, ForeignKey, Text, Numeric, Date
-from sqlalchemy.orm import relationship # Importar 'relationship'
+from sqlalchemy.orm import relationship 
 
 from database import Base
 
@@ -13,14 +12,14 @@ class Candidato(Base):
     pretensao_salarial = Column(Numeric)
     endereco = Column(String)
     data_nascimento = Column(Date)
-    curriculo = Column(String) # Mudei para String se for caminho de arquivo ou URL
+    curriculo = Column(String) 
 
     # Relacionamentos para as extras do Candidato
     candidaturas = relationship("Candidatura", back_populates="candidato")
     inscricoes_cursos = relationship("InscricaoCurso", back_populates="candidato")
     denuncias = relationship("Denuncia", back_populates="candidato")
-    grupos_candidato = relationship("CandidatoGrupo", back_populates="candidato") # Relacionamento com CandidatoGrupo
-
+    grupos_candidato = relationship("CandidatoGrupo", back_populates="candidato") 
+    
 class Empresa(Base):
     __tablename__ = 'empresa'
     cnpj = Column(String, primary_key=True)
@@ -37,7 +36,7 @@ class Empresa(Base):
 
 class Vaga(Base):
     __tablename__ = 'vaga'
-    id_vaga = Column(Integer, primary_key=True, autoincrement=True) # Autoincrement para SERIAL
+    id_vaga = Column(Integer, primary_key=True, autoincrement=True)
     titulo = Column(String(100))
     descricao = Column(Text)
     salario = Column(Numeric(10, 2))
@@ -64,7 +63,7 @@ class Candidatura(Base):
 
 class Curso(Base):
     __tablename__ = 'curso'
-    id_curso = Column(Integer, primary_key=True, autoincrement=True) # Autoincrement para SERIAL
+    id_curso = Column(Integer, primary_key=True, autoincrement=True)
     titulo = Column(String(100))
     descricao = Column(Text)
     carga_horaria = Column(Integer)
