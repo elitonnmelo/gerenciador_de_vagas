@@ -6,7 +6,7 @@ from models import Candidato, Candidatura, Curso, InscricaoCurso, Vaga, Denuncia
 import datetime
 
 pn.extension()
-
+#cria campos de entrada para preencher dados de um candidato
 def tela_candidato():
     cpf_in = pn.widgets.TextInput(name="CPF do Candidato")
     nome_in = pn.widgets.TextInput(name="Nome")
