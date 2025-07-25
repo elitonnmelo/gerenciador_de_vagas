@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from models import Empresa, Vaga, Publica, ResponsavelInclusao, Candidatura, Candidato, Denuncia, GrupoVulneravel, VagaGrupo
 
 pn.extension()
-
+# cria campos de entrada de texto para cadastrar ou editar informações de uma empresa usando a biblioteca Panel.
 def tela_empresa():
     cnpj_in = pn.widgets.TextInput(name="CNPJ da Empresa")
     nome_in = pn.widgets.TextInput(name="Nome")
