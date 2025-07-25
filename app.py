@@ -1,3 +1,4 @@
+# Esse código importa telas de diferentes módulos, inicializa a extensão Panel e cria uma aplicação com abas para navegar
 import panel as pn
 
 from tela_candidato import tela_candidato
