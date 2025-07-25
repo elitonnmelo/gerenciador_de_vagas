@@ -9,6 +9,7 @@ INSERT INTO Grupo_Vulneravel (Nome, Descricao) VALUES
 ('Pessoas em situação de rua', 'Indivíduos sem moradia fixa'),
 ('Jovens em primeiro emprego', 'Jovens com pouca ou nenhuma experiência profissional formal'),
 ('Pessoas 50+', 'Profissionais com mais de 50 anos em busca de recolocação'),
+('Mães solteiras', 'Mães solteiras em busca de emprego com pouco ou nenhuma experiência'),
 ('Comunidades indígenas', 'Membros de povos originários');
 
 -- Empresas
