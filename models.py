@@ -2,7 +2,7 @@ from sqlalchemy import Column, String, Integer, ForeignKey, Text, Numeric, Date
 from sqlalchemy.orm import relationship 
 
 from database import Base
-
+# define a estrutura da tabela candidato no banco de dados
 class Candidato(Base):
     __tablename__ = 'candidato'
     cpf = Column(String, primary_key=True)
